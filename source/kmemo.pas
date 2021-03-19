@@ -5661,6 +5661,8 @@ begin
     {$ELSE}
       C := AnsiStringToString(Key)[1];
     {$IFEND}
+      if (Length(C) = 1) and (C[1] < ' ') and not (eoWantControlChars in FOptions) then
+        exit;
       ExecuteCommand(ecInsertChar, @C);
     end else
       Exclude(FStates, elIgnoreNextChar);
