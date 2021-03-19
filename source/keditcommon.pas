@@ -255,7 +255,9 @@ type
     { TKMemo only: acquire TAB characters. }
     eoWantTab,
     { TKMemo only: Will wrap text at each character. }
-    eoWrapSingleChars
+    eoWrapSingleChars,
+    { TKMemo only: Allow inserting of control characters via CTRL-(letter) }
+    eoWantControlChars
   );
 
   { Options can be arbitrary combined }
