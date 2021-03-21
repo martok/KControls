@@ -1732,6 +1732,7 @@ type
     FOnChange: TNotifyEvent;
     FOnDropFiles: TKEditDropFilesEvent;
     FOnReplaceText: TKEditReplaceTextEvent;
+    FOnBlockUpdate: TKMemoBlockStyleChangedEvent;
     function GetActiveBlock: TKMemoBlock;
     function GetActiveInnerBlock: TKMemoBlock;
     function GetActiveInnerBlocks: TKMemoBlocks;
@@ -2323,6 +2324,8 @@ type
     { When assigned, this event will be invoked at each change made to the
       text buffer either by the user or programmatically by public functions. }
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    { When assigned, this event will be invoked after a block update event, after OnChange. }
+    property OnBlockUpdate: TKMemoBlockStyleChangedEvent read FOnBlockUpdate write FOnBlockUpdate;
     { When assigned, this event will be invoked when the user drops any files onto
       the window. }
     property OnDropFiles: TKEditDropFilesEvent read FOnDropFiles write FOnDropFiles;
@@ -4437,6 +4440,8 @@ begin
     end;
     if muContent in Reasons then
       DoChange;
+    if Assigned(FOnBlockUpdate) then
+      FOnBlockUpdate(Self, Reasons);
   end;
 end;
 
