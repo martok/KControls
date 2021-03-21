@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <PathDelim Value="\"/>
     <Name Value="KControlsLaz"/>
     <Type Value="RunAndDesignTime"/>
@@ -31,7 +31,7 @@ Package KControlsLaz: contains dependencies on LCL.
     <License Value="This code is licensed under BSD 3-Clause Clear License, see file License.txt or https://spdx.org/licenses/BSD-3-Clause-Clear.html.
 "/>
     <Version Major="1" Minor="7" Release="3"/>
-    <Files Count="43">
+    <Files Count="45">
       <Item1>
         <Filename Value="..\..\source\kgraphics.pas"/>
         <UnitName Value="kgraphics"/>
@@ -205,7 +205,16 @@ Package KControlsLaz: contains dependencies on LCL.
         <Filename Value="..\..\source\kmemodlgnumbering.pas"/>
         <UnitName Value="kmemodlgnumbering"/>
       </Item43>
+      <Item44>
+        <Filename Value="..\..\source\xkUndoManager.pas"/>
+        <UnitName Value="xkUndoManager"/>
+      </Item44>
+      <Item45>
+        <Filename Value="..\..\source\xkMemoHelper.pas"/>
+        <UnitName Value="xkMemoHelper"/>
+      </Item45>
     </Files>
+    <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="4">
       <Item1>
         <PackageName Value="kcontrolsbase"/>
