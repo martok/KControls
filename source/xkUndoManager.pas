@@ -104,24 +104,6 @@ begin
     DoInsertState(True, False);
 end;
 
-procedure DumpBlocks(blocks: TKMemoBlocks; Indent: String = '');
-var
-  i: Integer;
-  b: TKMemoBlock;
-begin
-  for i:= 0 to blocks.Count - 1 do begin
-    b:= blocks[i];
-    Write(Indent, i:5, ' ', b.ClassName, ' ');
-    if b is TKMemoTextBlock then
-      Write(TKMemoTextBlock(b).Text)
-    else if b is TKMemoImageBlock then
-      Write(TKMemoImageBlock(b).ImageWidth,'x',TKMemoImageBlock(b).ImageHeight);
-    WriteLn;
-    if b is TKMemoContainer then
-      DumpBlocks(TKMemoContainer(b).Blocks, Indent + ' ');
-  end;
-end;
-
 procedure TxkUndoManager.Capture(aState: TChangeSet);
 begin
   aState.SelStart:= fMemo.SelStart;
