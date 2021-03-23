@@ -13,7 +13,7 @@ unit xkMemoHelper;
 interface
 
 uses
-  SysUtils, Classes, kmemo, kmemortf;
+  SysUtils, Classes, kmemo, kfunctions, kmemortf;
 
 type
 
@@ -34,7 +34,21 @@ type
     procedure UpdateAll(CallInvalidate: Boolean);
   end;
 
+  { TKMemoBlockHelper }
+
+  TKMemoBlockHelper = class helper for TKMemoBlock
+    procedure SetInnerText(aText: TKString);
+    function GetNearestTable(out Col, Row: integer): TKMemoTable;
+  end;
+
+  { TKMemoTableHelper }
+
+  TKMemoTableHelper = class helper for TKMemoTable
+    procedure FixupCellContents;
+  end;
+
 operator := (A: TKMemoBlockAddress): String;
+procedure DumpBlocks(blocks: TKMemoBlocks; Indent: String = '');
 
 implementation
 
@@ -49,6 +63,25 @@ begin
     Result += IntToStr(A[i]);
   end;
   Result += ']';
+end;
+
+
+procedure DumpBlocks(blocks: TKMemoBlocks; Indent: String = '');
+var
+  i: Integer;
+  b: TKMemoBlock;
+begin
+  for i:= 0 to blocks.Count - 1 do begin
+    b:= blocks[i];
+    Write(Indent, i:5, ' ', b.ClassName, ' ');
+    if b is TKMemoTextBlock then
+      Write(TKMemoTextBlock(b).Text)
+    else if b is TKMemoImageBlock then
+      Write(TKMemoImageBlock(b).ImageWidth,'x',TKMemoImageBlock(b).ImageHeight);
+    WriteLn;
+    if b is TKMemoContainer then
+      DumpBlocks(TKMemoContainer(b).Blocks, Indent + ' ');
+  end;
 end;
 
 { TKMemoHelper }
@@ -108,6 +141,61 @@ begin
   if CallInvalidate then
     Invalidate;
 end;
+
+{ TKMemoBlockHelper }
+
+procedure TKMemoBlockHelper.SetInnerText(aText: TKString);
+begin
+  if Self is TKMemoTextBlock then
+    TKMemoTextBlock(self).Text:= aText
+  else if Self is TKMemoContainer then begin
+    TKMemoContainer(Self).Blocks.Clear;
+    if (aText = #13) or (aText = NewLineChar) then
+      TKMemoContainer(Self).Blocks.AddParagraph()
+    else
+      TKMemoContainer(Self).Blocks.AddTextBlock(aText);
+  end;
+end;
+
+function TKMemoBlockHelper.GetNearestTable(out Col, Row: integer): TKMemoTable;
+var
+  p: TKMemoBlock;
+begin
+  Result:= nil;
+  Col:= -1;
+  Row:= -1;
+  p:= Self;
+
+  while Assigned(p) do begin
+    if p is TKMemoTableCell then
+      Col:= p.ParentBlocks.IndexOf(p)
+    else if p is TKMemoTableRow then
+      Row:= p.ParentBlocks.IndexOf(p)
+    else if p is TKMemoTable then
+      Exit(p as TKMemoTable);
+    p:= p.ParentBlocks.Parent;
+  end;
+end;
+
+{ TKMemoTableHelper }
+
+procedure TKMemoTableHelper.FixupCellContents;
+var
+  r, c: Integer;
+  cell: TKMemoTableCell;
+begin
+  for r:= 0 to RowCount - 1 do begin
+    for c:= 0 to ColCount - 1 do begin
+      if CellValid(c, r) then begin
+        cell:= Cells[c, r];
+        if cell.Blocks.Count = 0 then
+          cell.SetInnerText(#13);
+      end;
+    end;
+  end;
+end;
+
+
 
 end.
 
