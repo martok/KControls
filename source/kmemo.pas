@@ -10167,6 +10167,7 @@ begin
   if ASource is TKMemoTableCell then
   begin
     Span := TKMemoTableCell(ASource).Span;
+    RequiredBorderWidths.Assign(TKMemoTableCell(ASource).RequiredBorderWidths);
   end;
 end;
 
