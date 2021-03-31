@@ -38,6 +38,7 @@ type
 
   TKMemoBlockHelper = class helper for TKMemoBlock
     procedure SetInnerText(aText: TKString);
+    function Clone: TKMemoBlock;
     function GetNearestTable(out Col, Row: integer): TKMemoTable;
   end;
 
@@ -155,6 +156,15 @@ begin
     else
       TKMemoContainer(Self).Blocks.AddTextBlock(aText);
   end;
+end;
+
+function TKMemoBlockHelper.Clone: TKMemoBlock;
+var
+  Cls: TKObjectClass;
+begin
+  Cls:= TKObjectClass(Self.ClassType);
+  Result:= Cls.Create as TKMemoBlock;
+  Result.Assign(Self);
 end;
 
 function TKMemoBlockHelper.GetNearestTable(out Col, Row: integer): TKMemoTable;
