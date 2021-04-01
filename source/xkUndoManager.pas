@@ -137,6 +137,7 @@ begin
     end else
       fMemo.ActiveBlocks:= fMemo.Blocks;
     fMemo.Select(aState.SelStart, aState.SelLength);
+    fMemo.Modified:= true;
   finally
     //fMemo.UnlockUpdate;
     fMemo.UpdateAll(True);
