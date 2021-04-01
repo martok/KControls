@@ -44,8 +44,12 @@ type
 
   { TKMemoTableHelper }
 
+  TCellArray = array of TKMemoTableCell;
+
   TKMemoTableHelper = class helper for TKMemoTable
     procedure FixupCellContents;
+    function Empty: boolean;
+    function AllCells: TCellArray;
   end;
 
 operator := (A: TKMemoBlockAddress): String;
@@ -191,15 +195,33 @@ end;
 
 procedure TKMemoTableHelper.FixupCellContents;
 var
-  r, c: Integer;
   cell: TKMemoTableCell;
 begin
+  for cell in AllCells do
+    if cell.Blocks.Count = 0 then
+      cell.SetInnerText(#13);
+end;
+
+function TKMemoTableHelper.Empty: boolean;
+var
+  r, c: Integer;
+begin
+  Result:= True;
+  for r:= 0 to RowCount - 1 do
+    for c:= 0 to Rows[r].Blocks.Count - 1 do
+      if CellValid(c, r) then
+        Exit(False);
+end;
+
+function TKMemoTableHelper.AllCells: TCellArray;
+var
+  r, c: Integer;
+begin
+  Result:= nil;
   for r:= 0 to RowCount - 1 do begin
-    for c:= 0 to ColCount - 1 do begin
+    for c:= 0 to Rows[r].Blocks.Count - 1 do begin
       if CellValid(c, r) then begin
-        cell:= Cells[c, r];
-        if cell.Blocks.Count = 0 then
-          cell.SetInnerText(#13);
+        Insert(Cells[c, r], Result, MaxInt);
       end;
     end;
   end;
