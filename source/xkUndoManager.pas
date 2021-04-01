@@ -30,15 +30,16 @@ type
       destructor Destroy; override;
       function ToString: String; override;
     end;
-    TChangeList = specialize TFPGList<TChangeSet>;
+    TChangeList = specialize TFPGObjectList<TChangeSet>;
   private
     fMemo: TKMemo;
     fInternalChange: boolean;
+    fInEditGroup: boolean;
     fChanges: TChangeList;
     fChangePointer: Integer;
     fMaxCount: integer;
   protected
-    procedure DoInsertState(ContentChange, SelectionChange: boolean);
+    procedure DoInsertState(ContentChange, SelectionChange: boolean; ForceInsert: boolean = False);
     procedure Capture(aState: TChangeSet);
     procedure Apply(aState: TChangeSet);
     procedure MemoBlockUpdate(Sender: TObject; AReasons: TKMemoUpdateReasons);
@@ -51,6 +52,9 @@ type
     function CanUndo: boolean;
     function CanRedo: boolean;
     property MaxCount: integer read fMaxCount write fMaxCount;
+    procedure BeginEditGroup;
+    procedure EndEditGroup;
+    procedure RollbackEditGroup;
   end;
 
 implementation
@@ -80,10 +84,11 @@ begin
   fMemo.OnBlockUpdate:=@MemoBlockUpdate;
   fMemo.KeyMapping.Key[ecUndo]:= fMemo.KeyMapping.EmptyMap.Key;
   fMemo.KeyMapping.Key[ecRedo]:= fMemo.KeyMapping.EmptyMap.Key;
-  fChanges:= TChangeList.Create;
+  fChanges:= TChangeList.Create(true);
   fChangePointer:= 0;
   fMaxCount:= 100;
   fInternalChange:= false;
+  fInEditGroup:= false;
 end;
 
 destructor TxkUndoManager.Destroy;
@@ -95,10 +100,7 @@ end;
 
 procedure TxkUndoManager.Reset(CaptureCurrent: boolean);
 begin
-  while fChanges.Count > 0 do begin
-    fChanges[0].Free;
-    fChanges.Delete(0);
-  end;
+  fChanges.Clear;
   fChangePointer:= -1;
   if CaptureCurrent then
     DoInsertState(True, False);
@@ -142,8 +144,9 @@ begin
   end;
 end;
 
-procedure TxkUndoManager.DoInsertState(ContentChange, SelectionChange: boolean);
+procedure TxkUndoManager.DoInsertState(ContentChange, SelectionChange: boolean; ForceInsert: boolean);
 var
+  action: (aNewHead, aUpdateHead, aReplaceHead);
   state: TChangeSet;
   i: Integer;
 begin
@@ -156,28 +159,41 @@ begin
     if ContentChange then
       if (fChanges.Count>=0) and (fChangePointer>=0) and (fChangePointer<fChanges.Count) then
         ContentChange:= (state.rtf.DataString <> fChanges[fChangePointer].rtf.DataString);
-    if ContentChange then begin
+    if ForceInsert then
+      action:= aNewHead
+    else begin
+      if fInEditGroup then
+        action:= aReplaceHead
+      else begin
+        if ContentChange then
+          action:= aNewHead
+        else if SelectionChange then
+          action:= aUpdateHead;
+      end;
+    end;
+
+    DebugLn(['InsertState Decided=', action,' New=', state.ToString]);
+
+    if action in [aNewHead, aReplaceHead] then begin
       // if currently in the past, delete future
-      for i:= fChangePointer - 1 downto 0 do begin
-        fChanges[i].Free;
+      for i:= fChangePointer - 1 downto 0 do
         fChanges.Delete(i);
-      end;
       fChangePointer:= 0;
+    end;
+
+    if action = aReplaceHead then
+      fChanges.Delete(fChangePointer);
+
+    if action in [aNewHead, aReplaceHead] then begin
       fChanges.Insert(fChangePointer, state);
-      DebugLn(['InsertState=ContentChange ', state.ToString]);
       // let stuff fall off the back
-      while fChanges.Count > fMaxCount do begin
-        fChanges[fMaxCount].Free;
+      while fChanges.Count > fMaxCount do
         fChanges.Delete(fMaxCount);
-      end;
-    end else if SelectionChange then begin
-      // no content change
+    end else if action in [aUpdateHead] then begin
+      // update selection of present
       if (fChangePointer = 0) and (fChanges.Count>=0) then begin
-        // update selection of present
         // qnd: replace with new state
-        fChanges[fChangePointer].Free;
         fChanges[fChangePointer]:= state;
-        DebugLn(['InsertState=Selection ', state.ToString]);
       end;
     end;
   finally
@@ -213,12 +229,41 @@ end;
 
 function TxkUndoManager.CanUndo: boolean;
 begin
-  Result:= fChangePointer < fChanges.Count - 1;
+  Result:= not fInEditGroup and (fChangePointer < fChanges.Count - 1);
 end;
 
 function TxkUndoManager.CanRedo: boolean;
 begin
-  Result:= fChangePointer > 0;
+  Result:= not fInEditGroup and (fChangePointer > 0);
+end;
+
+procedure TxkUndoManager.BeginEditGroup;
+begin
+  // TODO needs to be forced add
+  DoInsertState(true, true, true);
+  fInEditGroup:= true;
+end;
+
+procedure TxkUndoManager.EndEditGroup;
+begin
+  if not fInEditGroup then
+    Exit;
+  fInEditGroup:= false;
+  // all changes up to here have been captured as updates
+end;
+
+procedure TxkUndoManager.RollbackEditGroup;
+begin
+  if not fInEditGroup then
+    Exit;
+  fInEditGroup:= false;
+  // all changes up to here have been captured as updates
+  Assert(fChangePointer = 0, 'Edit Group is not current');
+  // Undo it
+  Undo;
+  // drop the future that never happened
+  fChanges.Delete(0);
+  fChangePointer:= 0;
 end;
 
 
